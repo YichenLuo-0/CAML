@@ -7,10 +7,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-# -------------------------
-# Activations
-# -------------------------
-
 def _sin(x: torch.Tensor) -> torch.Tensor:
     return torch.sin(x)
 
@@ -18,7 +14,7 @@ def _sin(x: torch.Tensor) -> torch.Tensor:
 ACTIVATION_FN: Dict[str, Callable[[torch.Tensor], torch.Tensor]] = {
     "relu": F.relu,
     "gelu": F.gelu,
-    "swish": F.silu,  # swish == SiLU in PyTorch
+    "swish": F.silu,
     "sigmoid": torch.sigmoid,
     "tanh": torch.tanh,
     "sin": _sin,
@@ -31,24 +27,13 @@ def get_activation(name: str) -> Callable[[torch.Tensor], torch.Tensor]:
     raise NotImplementedError(f"Activation {name} not supported yet!")
 
 
-# -------------------------
-# Initializers (rough Flax parity)
-# -------------------------
-
 def init_glorot_normal_(w: torch.Tensor) -> None:
-    # Flax glorot_normal ~ Xavier normal
     nn.init.xavier_normal_(w)
 
 
 def init_zeros_(b: torch.Tensor) -> None:
     nn.init.zeros_(b)
 
-
-# -------------------------
-# Weight factorization reparam: kernel = g * v
-# where g = exp(N(mean, stddev)) per-output feature (out_features,)
-# and v is a matrix (in_features, out_features)
-# -------------------------
 
 class LinearWeightFact(nn.Module):
     def __init__(
@@ -65,11 +50,9 @@ class LinearWeightFact(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
 
-        # v is like the underlying weight
         self.v = nn.Parameter(torch.empty(in_features, out_features))
         kernel_init(self.v)
 
-        # log_g param so g is always positive via exp
         self.log_g = nn.Parameter(torch.empty(out_features))
         with torch.no_grad():
             self.log_g.normal_(mean=mean, std=stddev)
@@ -81,8 +64,7 @@ class LinearWeightFact(nn.Module):
             self.bias = None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        g = torch.exp(self.log_g)  # (out_features,)
-        # Broadcast g over in_features: (in, out) * (out,) -> (in, out)
+        g = torch.exp(self.log_g)
         w = self.v * g
         y = x @ w
         if self.bias is not None:
@@ -91,12 +73,6 @@ class LinearWeightFact(nn.Module):
 
 
 class Dense(nn.Module):
-    """
-    Flax-style Dense wrapper with optional reparam:
-      - None: standard Linear layer
-      - {"type": "weight_fact", "mean": ..., "stddev": ...}: use LinearWeightFact
-    """
-
     def __init__(
             self,
             in_features: int,
@@ -129,17 +105,7 @@ class Dense(nn.Module):
         return self.linear(x)
 
 
-# -------------------------
-# Embeddings
-# -------------------------
-
 class PeriodEmbs(nn.Module):
-    """
-    period: tuple of period scalars for each axis listed in `axis`
-    axis: tuple of axis indices (over feature dimensions) to apply periodic embedding
-    trainable: tuple of bool, whether corresponding period is trainable
-    """
-
     def __init__(self, period: Tuple[float, ...], axis: Tuple[int, ...], trainable: Tuple[bool, ...]):
         super().__init__()
         if len(period) != len(axis) or len(axis) != len(trainable):
@@ -147,11 +113,9 @@ class PeriodEmbs(nn.Module):
 
         self.axis = tuple(axis)
 
-        # store per-axis periods as either parameters or buffers
         self._period_params = nn.ParameterList()
         self._period_buffers: Dict[str, torch.Tensor] = {}
 
-        # Map axis-list index -> actual period tensor in a callable way
         self._period_is_trainable = list(trainable)
         for i, (p, is_tr) in enumerate(zip(period, trainable)):
             t = torch.tensor(float(p))
@@ -164,9 +128,6 @@ class PeriodEmbs(nn.Module):
 
     def _get_period_tensor(self, idx_in_axis_list: int) -> torch.Tensor:
         if self._period_is_trainable[idx_in_axis_list]:
-            # Count trainable params up to idx to index ParameterList
-            # (simpler: keep a parallel mapping)
-            # Build mapping once:
             tr_positions = [i for i, t in enumerate(self._period_is_trainable) if t]
             param_index = tr_positions.index(idx_in_axis_list)
             return self._period_params[param_index]
@@ -174,12 +135,6 @@ class PeriodEmbs(nn.Module):
             return self._period_buffers[f"period_{idx_in_axis_list}"]
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        x: (..., D) or (D,)  (feature vector). We'll treat last dim as features.
-        Returns: (..., D + len(axis)) with cos/sin for each selected axis replacing the scalar.
-        (Matches your JAX behavior: keep other dims, but for selected dims append cos and sin and drop the original? No:
-         Your code: if periodic axis, y.extend([cos, sin]) else y.append(xi) -> original periodic dim is replaced by 2 dims.)
-        """
         if x.dim() == 1:
             x_in = x.unsqueeze(0)
             squeeze_back = True
@@ -243,7 +198,6 @@ class Embedding(nn.Module):
                 axis=tuple(periodicity["axis"]),
                 trainable=tuple(periodicity["trainable"]),
             )
-            # For each periodic axis, 1 dim becomes 2 dims -> +1 per axis
             cur_dim = cur_dim + len(periodicity["axis"])
 
         if fourier_emb:
@@ -263,10 +217,6 @@ class Embedding(nn.Module):
             x = self.fourier(x)
         return x
 
-
-# -------------------------
-# MLP / ResNet-family
-# -------------------------
 
 class Mlp(nn.Module):
     def __init__(
@@ -299,9 +249,7 @@ class Mlp(nn.Module):
 
         self.pi_init = None
         if pi_init is not None:
-            # Trainable parameter, as in Flax self.param(...)
             self.pi_init = nn.Parameter(pi_init.clone().detach())
-            # Output is x @ kernel (kernel shape: (hidden_dim, out_dim) or (hidden_dim, K))
             self.out_dim = self.pi_init.shape[-1]
             self.head = None
         else:
@@ -318,7 +266,6 @@ class Mlp(nn.Module):
         else:
             y = self.head(x)
 
-        # Match your Flax return: (features, y)
         return x, y
 
 
@@ -342,17 +289,12 @@ class Bottleneck(nn.Module):
         x = self.activation_fn(self.fc1(x))
         x = self.activation_fn(self.fc2(x))
         x = self.fc3(x)
-        x = x + identity  # skip before activation (original ResNet style)
+        x = x + identity
         x = self.activation_fn(x)
         return x
 
 
 class PIBottleneck(nn.Module):
-    """
-    Physics-informed bottleneck:
-    skip connection after activation in the block, then blend with alpha.
-    """
-
     def __init__(
             self,
             hidden_dim: int,
@@ -426,7 +368,7 @@ class ResNet(nn.Module):
             periodicity: Optional[Dict] = None,
             fourier_emb: Optional[Dict] = None,
             reparam: Optional[Dict] = None,
-            pi_init: Optional[torch.Tensor] = None,  # kept for API parity (unused in your JAX ResNet)
+            pi_init: Optional[torch.Tensor] = None,
     ):
         super().__init__()
         self.activation_fn = get_activation(activation)
