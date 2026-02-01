@@ -12,7 +12,6 @@ class BoundaryCondition(nn.Module):
     ):
         super().__init__()
 
-        # 让它们跟着模型搬到 device / dtype
         self.register_buffer("alpha", alpha)
         self.register_buffer("beta", beta)
         self.register_buffer("normal_vector", normal_vector)
@@ -26,8 +25,7 @@ class BoundaryCondition(nn.Module):
             tensor: torch.Tensor,
             mask: torch.Tensor
     ):
-        # boundary points
-        bc_idx = mask.bool().view(-1)  # [N_bc]
+        bc_idx = mask.bool().view(-1)
         tensor_boundary = tensor[bc_idx]
         return tensor_boundary
 
@@ -41,49 +39,33 @@ class BoundaryCondition(nn.Module):
         return tensor_boundary
 
     def zeroth(self, u: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        # u: [N, C] where C in {1,2}
-        # alpha: scalar or [C] or [1,C]
         u = self._split_points(u, mask)
         return self.alpha * u
 
     def derivative(self, x: torch.Tensor, u: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        """
-        x: [N, I]
-        u: [N, C] where C in {1,2}
-        normal_vector: [N, I]
-        return: beta * du/dn -> [N, C]
-        """
-
-        # 先把非边界点屏蔽掉
         u_ = self._mask_points(u, mask)
 
-        # 每个通道分别求梯度：得到 [N, C, I]
         grads = []
         for c in range(u_.shape[1]):
             du_c_dx = torch.autograd.grad(
-                outputs=u_[:, c],  # [N]
-                inputs=x,  # [N, I]
+                outputs=u_[:, c],
+                inputs=x,
                 grad_outputs=torch.ones_like(u_[:, c]),
                 create_graph=True,
-                retain_graph=True,  # 多通道需要保留图
+                retain_graph=True,
                 only_inputs=True
-            )[0]  # [N, I]
+            )[0]
             grads.append(du_c_dx)
 
-        du_dx = torch.stack(grads, dim=1)  # [N, C, I]
+        du_dx = torch.stack(grads, dim=1)
         du_dx = self._split_points(du_dx, mask)
 
-        # 法向导数：sum_i n_i * du/dx_i -> [N, C]
         normal_derivative = torch.einsum("ni,nci->nc", self.normal_vector, du_dx)
 
-        # beta 广播到 [N, C]
         return self.beta * normal_derivative
 
     @abstractmethod
     def source(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-        """
-        应返回 [N, C]，与 u 的通道数一致（C=1 或 2）
-        """
         pass
 
     def reset(self):

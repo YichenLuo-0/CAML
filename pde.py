@@ -22,37 +22,14 @@ class PDE(nn.Module):
 
     @abstractmethod
     def zeroth(self, x, u):
-        """
-        计算PDE零阶项
-        Args:
-            x: [N, 2] 坐标点
-            u: [N, D] 预测值
-        Returns:
-            zeroth_terms: [N, D] 零阶项
-        """
         pass
 
     @abstractmethod
     def derivative(self, x, u):
-        """
-        计算PDE导数项
-        Args:
-            x: [N, 2] 坐标点
-            u: [N, D] 预测值
-        Returns:
-            derivative_terms: [N, D, 2, ...] 导数项，具体维度根据PDE定义而定
-        """
         pass
 
     @abstractmethod
     def source(self, x):
-        """
-        计算PDE源项
-        Args:
-            x: [N, 2] 坐标点
-        Returns:
-            source_terms: [N, D] 源项
-        """
         pass
 
     def reset(self):
