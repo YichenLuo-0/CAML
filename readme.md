@@ -1,6 +1,6 @@
 # CAML: Constraint-Aligned loss with Manifold Lifting
 
-Code for **CAML: Constraint-Aligned loss with Manifold Lifting**, presented at the _43rd International Conference on Machine Learning (ICML 2026)_.
+Code for paper **Mitigating Gradient Pathology in PINNs through Aligned Constraint**, presented at the _43rd International Conference on Machine Learning (ICML 2026)_.
 
 ## Getting Started
 
