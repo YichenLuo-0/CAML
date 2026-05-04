@@ -1,7 +1,5 @@
 # CAML: Constraint-Aligned loss with Manifold Lifting
 
-This repository contains the implementation of the CAML.
-
 Code for **CAML: Constraint-Aligned loss with Manifold Lifting**, presented at the _43rd International Conference on Machine Learning (ICML 2026)_.
 
 ## Getting Started
