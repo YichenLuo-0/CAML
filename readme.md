@@ -8,8 +8,6 @@ losses and boundary-condition losses. By reformulating zeroth-order terms into a
 delayed residual loss, CAML improves the numerical stability, convergence speed, and robustness of PINNs on complex PDE
 problems.
 
----
-
 ## Overview
 
 Physics-Informed Neural Networks (PINNs) solve partial differential equations by minimizing a combination of PDE
@@ -20,8 +18,6 @@ CAML addresses this issue from the perspective of loss geometry and optimization
 
 The key idea is to enlarge the admissible solution space by introducing an explicitly solvable offset for zeroth-order
 terms, allowing the model to better align PDE and boundary constraints during training.
-
----
 
 ## Getting Started
 
@@ -36,8 +32,6 @@ To reproduce the experimental results reported in the paper, please run the corr
 - `eval_helm.py` for the Helmholtz benchmark
 
 The hyperparameter settings used in the experiments are provided in Appendix L.2 of the paper.
-
----
 
 ## Project Structure
 
@@ -71,8 +65,6 @@ CAML/
 └── readme.md
 ```
 
----
-
 ## Supported Benchmarks
 
 The paper evaluates CAML on representative PDE problems from thermodynamics, fluid mechanics, and electromagnetism:
@@ -84,8 +76,6 @@ The paper evaluates CAML on representative PDE problems from thermodynamics, flu
 | Navier-Stokes | Steady-state Navier-Stokes problem with nonlinear operators                   |
 | Helmholtz     | Helmholtz reaction-diffusion problem with complex geometry and high frequency |
 
----
-
 ## Supported Backbones
 
 CAML can be integrated into different PINN architectures:
@@ -94,8 +84,6 @@ CAML can be integrated into different PINN architectures:
 * PirateNets
 * PINNsFormer
 * Other custom neural PDE solvers
-
----
 
 ## Citation
 
@@ -109,3 +97,11 @@ If you find this repository useful, please cite:
   year      = {2026}
 }
 ```
+
+## Acknowledgements
+
+This repository is built upon the following open-source projects:
+
+- [PinnsFormer](https://github.com/AdityaLab/pinnsformer)
+- [PirateNets](https://github.com/PredictiveIntelligenceLab/jaxpi/tree/pirate) (The original code of PirateNets was
+  implemented using JAX. We have translated it into a PyTorch version.)
