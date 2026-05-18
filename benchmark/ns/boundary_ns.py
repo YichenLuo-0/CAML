@@ -4,7 +4,7 @@ from boundary import BoundaryCondition
 
 
 class BoundaryNS(BoundaryCondition):
-    def __init__(self, n: int, normal_vector: torch.Tensor, U: tuple[float, float] = (10.0, 10.0)):
+    def __init__(self, n: int, normal_vector: torch.Tensor, U: tuple[float, float] = (1.0, 1.0)):
         alpha = torch.ones(n, 2, dtype=normal_vector.dtype, device=normal_vector.device)
         beta = torch.zeros(n, 2, dtype=normal_vector.dtype, device=normal_vector.device)
         super().__init__(alpha=alpha, beta=beta, normal_vector=normal_vector)

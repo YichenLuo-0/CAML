@@ -5,7 +5,7 @@ from pde import PDE
 
 class NS(PDE):
 
-    def __init__(self, Re: float, U: tuple[float, float] = (10.0, 10.0)):
+    def __init__(self, Re: float, U: tuple[float, float] = (1.0, 1.0)):
         super().__init__(linear=False, gamma=None)
         if Re <= 0:
             raise ValueError("Re must be positive.")

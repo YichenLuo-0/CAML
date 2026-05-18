@@ -37,7 +37,7 @@ target_l2 = 1e-2
 # ============================================================
 
 
-def analytical_solution(x, y, U=(10.0, 10.0)):
+def analytical_solution(x, y, U=(1.0, 1.0)):
     pi = np.pi
     u = pi * np.sin(pi * x) * np.cos(pi * y)
     v = -pi * np.cos(pi * x) * np.sin(pi * y)
