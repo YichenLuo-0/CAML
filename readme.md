@@ -1,5 +1,9 @@
 # CAML: Constraint-Aligned loss with Manifold Lifting
 
+[![Paper (ICML 2026)](https://img.shields.io/badge/Paper-ICML%202026-green)](https://icml.cc/virtual/2026/poster/65216)
+[![Paper (ArXiv)](https://img.shields.io/badge/Paper-ArXiv-brown)](https://icml.cc/virtual/2026/poster/65216)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 Code for paper **Mitigating Gradient Pathology in PINNs through Aligned Constraint**, presented at the _43rd
 International Conference on Machine Learning (ICML 2026)_.
 
