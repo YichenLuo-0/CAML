@@ -18,6 +18,8 @@ Physics-Informed Neural Networks (PINNs) solve partial differential equations by
 residual losses and boundary-condition losses. However, in many practical problems, these two loss terms may induce
 conflicting gradients, making optimization unstable or trapping the model in poor local minima.
 
+![CAML framework](fig3.png)
+
 CAML addresses this issue from the perspective of loss geometry and optimization dynamics.
 
 The key idea is to enlarge the admissible solution space by introducing an explicitly solvable offset for zeroth-order
