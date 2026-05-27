@@ -103,6 +103,7 @@ class PINNsFormer(nn.Module):
         super(PINNsFormer, self).__init__()
 
         self.linear_emb = nn.Linear(2, d_model)
+        self.linear_emb1 = nn.Linear(2, d_model)
 
         self.encoder = Encoder(d_model, N, heads)
         self.decoder = Decoder(d_model, N, heads)
@@ -116,10 +117,11 @@ class PINNsFormer(nn.Module):
 
     def forward(self, x):
         # src = torch.cat((x, t), dim=-1)
-        src = x.unsqueeze(1)
-        src = self.linear_emb(src)
+        src = x.unsqueeze(0)
+        src_e = self.linear_emb(src.detach())
+        src_d = self.linear_emb1(src)
 
-        e_outputs = self.encoder(src)
-        d_output = self.decoder(src, e_outputs)
+        e_outputs = self.encoder(src_e)
+        d_output = self.decoder(src_d, e_outputs)
         output = self.linear_out(d_output)
-        return output.squeeze(1)
+        return output.squeeze(0)
